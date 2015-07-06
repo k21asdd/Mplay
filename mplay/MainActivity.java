@@ -83,7 +83,7 @@ public class MainActivity extends AppCompatActivity implements
 			public void onClick(View v) {
 				// TODO Auto-generated method stub
 				try {
-					if( action.getText().toString().equals("Pause")){
+					if( action.getText().toString().equals("¼È°±")){
 						if(mp.isPlaying()){
 							mp.pause();
 						}
@@ -92,7 +92,7 @@ public class MainActivity extends AppCompatActivity implements
 						action.setText("Play");
 			        	
 					}
-					else if ( action.getText().toString().equals("Play")){
+					else if ( action.getText().toString().equals("¼½©ñ")){
 						mp.start();
 						if(!seekBarThread.isAlive())
 							seekBarThread.start();
@@ -243,7 +243,7 @@ public class MainActivity extends AppCompatActivity implements
 		
         //start running
         if(ML.isEmpty())
-        	currenTime.setText("Someting wrong");
+        	currenTime.setText("Something wrong");
         else{
         	init = true;
         	mp.setLooping(true);
@@ -354,7 +354,7 @@ public class MainActivity extends AppCompatActivity implements
 				)
 			)
 		);
-		action.setText("Play");
+		action.setText("¼½©ñ");
 	}
 
 	@Override

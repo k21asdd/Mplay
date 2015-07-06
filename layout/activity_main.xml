@@ -7,7 +7,15 @@
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context="com.example.mplay.MainActivity" >
-
+    
+    <SeekBar
+        android:id="@+id/seekMusic"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/stop"
+        android:layout_alignParentLeft="true"
+        android:layout_marginBottom="30dp" />
+    
     <Button
         android:id="@+id/stop"
         android:layout_width="wrap_content"
@@ -16,15 +24,7 @@
         android:layout_alignBottom="@+id/action"
         android:layout_marginLeft="20dp"
         android:layout_toRightOf="@+id/action"
-        android:text="Stop" />
-
-    <SeekBar
-        android:id="@+id/seekMusic"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_above="@+id/stop"
-        android:layout_alignParentLeft="true"
-        android:layout_marginBottom="30dp" />
+        android:text="@string/stop" />
 
     <Button
         android:id="@+id/nextSong"
@@ -33,7 +33,7 @@
         android:layout_alignBaseline="@+id/preSong"
         android:layout_alignBottom="@+id/preSong"
         android:layout_alignLeft="@+id/stop"
-        android:text="Next" />
+        android:text="@string/next" />
 
     <Button
         android:id="@+id/preSong"
@@ -42,7 +42,7 @@
         android:layout_alignParentBottom="true"
         android:layout_marginBottom="79dp"
         android:layout_toLeftOf="@+id/stop"
-        android:text="Pre" />
+        android:text="@string/pre" />
 
     <Button
         android:id="@+id/action"
@@ -52,7 +52,7 @@
         android:layout_alignLeft="@+id/seekMusic"
         android:layout_marginBottom="30dp"
         android:layout_marginLeft="36dp"
-        android:text="Wait" />
+        android:text="@string/action" />
 
     <TextView
         android:id="@+id/songName"
@@ -61,7 +61,6 @@
         android:layout_alignLeft="@+id/currenTime"
         android:layout_alignParentTop="true"
         android:layout_marginTop="18dp"
-        android:text="Medium Text"
         android:textAppearance="?android:attr/textAppearanceMedium" />
 
     <TextView
@@ -71,7 +70,6 @@
         android:layout_above="@+id/finalTime"
         android:layout_alignLeft="@+id/finalTime"
         android:layout_marginBottom="14dp"
-        android:text="Find sdk"
         android:textAppearance="?android:attr/textAppearanceMedium" />
 
     <TextView
@@ -81,7 +79,6 @@
         android:layout_above="@+id/seekMusic"
         android:layout_alignLeft="@+id/seekMusic"
         android:layout_marginBottom="14dp"
-        android:text="Medium Text"
         android:textAppearance="?android:attr/textAppearanceMedium" />
 
 </RelativeLayout>
