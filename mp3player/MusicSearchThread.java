@@ -1,19 +1,17 @@
 package com.example.mp3player;
 
 import java.io.File;
-import java.io.FileFilter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Stack;
 
+
 public class MusicSearchThread extends Thread{
 	private File root;
 	private ArrayList<String> MuArrList;
-	private Stack<HashMap<File[], Integer>> sFolder;
 	MusicSearchThread(final File folder, ArrayList<String> songs){
 		root = folder;
 		MuArrList = songs;
-//		sFolder = new Stack<HashMap<File[], Integer>>();
 	}
 	@Override
 	public void run(){
