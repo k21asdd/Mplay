@@ -26,7 +26,7 @@ public class MainActivity extends Activity implements
 MediaPlayer.OnBufferingUpdateListener,
 MediaPlayer.OnPreparedListener{
 
-	private Button action,stop,pre,next;
+	private Button action,pre,next;
 	private MediaPlayer mp;
 	private TextView currenTime, finalTime, songName; 
 	private SeekBar MusicBar;
@@ -53,7 +53,6 @@ MediaPlayer.OnPreparedListener{
         
         ML = new MusicList();
         action = (Button)findViewById(R.id.action);
-        stop = (Button)findViewById(R.id.stop);
         pre = (Button)findViewById(R.id.preSong);
         next = (Button)findViewById(R.id.nextSong);
         currenTime = (TextView)findViewById(R.id.currenTime);
@@ -99,29 +98,6 @@ MediaPlayer.OnPreparedListener{
 			}
         	
         });
-        
-        stop.setOnClickListener(new OnClickListener (){
-        			
-			@Override
-			public void onClick(View v) {
-				closeSBT(seekBarThread);
-				if(!init)return;
-				// TODO Auto-generated method stub
-				if( mp != null ){
-					if( init ){
-						mp.stop();
-						action.setText("¼½©ñ");
-					}
-				}
-				MusicBar.setProgress(0);
-				MusicBar.setSecondaryProgress(0);
-				
-				setSong(ML.CurrSong());
-				prepareSong();
-				
-			}
-        });
-        
         next.setOnClickListener(new OnClickListener (){
         
 			@Override
