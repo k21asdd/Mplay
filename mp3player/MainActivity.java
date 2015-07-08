@@ -5,6 +5,8 @@ import java.util.concurrent.TimeUnit;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.content.Intent;
+import android.content.res.Configuration;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.media.MediaPlayer.OnCompletionListener;
@@ -12,6 +14,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -20,6 +23,7 @@ import android.widget.Button;
 import android.widget.SeekBar;
 import android.widget.SeekBar.OnSeekBarChangeListener;
 import android.widget.TextView;
+import android.widget.Toast;
 
 
 public class MainActivity extends Activity implements 
@@ -197,8 +201,8 @@ MediaPlayer.OnPreparedListener{
 			@Override
 			public void run() {
 				// TODO Auto-generated method stub
-				while(!Thread.currentThread().interrupted() && mp != null){
-					if( mp.isPlaying() ){
+				while(!Thread.currentThread().interrupted()){
+					if( mp != null && mp.isPlaying() ){
 						seekBarHandler.sendMessage(seekBarHandler.obtainMessage(RUN));
 						Log.d("Bian",seekBarThread.getName());
 						try{
@@ -313,6 +317,34 @@ MediaPlayer.OnPreparedListener{
     	mp = null;
     	super.onDestroy();
     }
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        
+        if (keyCode == KeyEvent.KEYCODE_BACK)
+        {
+            // Show home screen when pressing "back" button,
+            //  so that this app won't be closed accidentally
+            Intent intentHome = new Intent(Intent.ACTION_MAIN);
+            intentHome.addCategory(Intent.CATEGORY_HOME);
+            intentHome.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(intentHome);
+            
+            return true;
+        }
+        
+        return super.onKeyDown(keyCode, event);
+    }
+    @Override
+    public void onConfigurationChanged(Configuration newConfig){
+        super.onConfigurationChanged(newConfig);
+
+        // Checks the orientation of the screen
+        if(newConfig.orientation ==Configuration.ORIENTATION_LANDSCAPE){
+            Toast.makeText(this,"landscape",Toast.LENGTH_SHORT).show();
+        }else if(newConfig.orientation ==Configuration.ORIENTATION_PORTRAIT){
+            Toast.makeText(this,"portrait",Toast.LENGTH_SHORT).show();
+        }
+    }
 	@Override
 	public void onPrepared(MediaPlayer mp) {
 		// TODO Auto-generated method stub
@@ -326,7 +358,6 @@ MediaPlayer.OnPreparedListener{
 				)
 			)
 		);
-		action.setText("¼½©ñ");
 	}
 
 
