@@ -6,54 +6,44 @@
     android:paddingLeft="@dimen/activity_horizontal_margin"
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
-    tools:context="com.example.mplay.MainActivity" >
-    
+    tools:context="com.example.mp3player.MainActivity" >
+
     <SeekBar
         android:id="@+id/seekMusic"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_above="@+id/stop"
-        android:layout_alignParentLeft="true"
+        android:layout_alignParentBottom="true"
         android:layout_marginBottom="30dp" />
     
-    <Button
-        android:id="@+id/stop"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignBaseline="@+id/action"
-        android:layout_alignBottom="@+id/action"
-        android:layout_marginLeft="20dp"
-        android:layout_toRightOf="@+id/action"
-        android:text="@string/stop" />
+	<LinearLayout 
+	    android:layout_width="match_parent"
+	    android:layout_height="wrap_content"
+	    android:layout_above="@+id/seekMusic"
+	    android:orientation="horizontal">
 
-    <Button
-        android:id="@+id/nextSong"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignBaseline="@+id/preSong"
-        android:layout_alignBottom="@+id/preSong"
-        android:layout_alignLeft="@+id/stop"
-        android:text="@string/next" />
-
-    <Button
-        android:id="@+id/preSong"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_marginBottom="79dp"
-        android:layout_toLeftOf="@+id/stop"
-        android:text="@string/pre" />
-
-    <Button
-        android:id="@+id/action"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_above="@+id/preSong"
-        android:layout_alignLeft="@+id/seekMusic"
-        android:layout_marginBottom="30dp"
-        android:layout_marginLeft="36dp"
-        android:text="@string/action" />
-
+	    <Button
+	        android:id="@+id/preSong"
+	        android:layout_width="wrap_content"
+	        android:layout_height="wrap_content"
+	        android:text="@string/pre" 
+	        android:layout_weight="1"/>
+	
+	    <Button
+	        android:id="@+id/action"
+	        android:layout_width="wrap_content"
+	        android:layout_height="wrap_content"
+	        android:text="@string/action" 
+	        android:layout_weight="1"/>
+		    	    
+	    <Button
+	       android:id="@+id/nextSong"
+	       android:layout_width="wrap_content"
+	       android:layout_height="wrap_content"
+	       android:text="@string/next" 
+	       android:layout_weight="1"/>
+    
+	</LinearLayout>
+    
     <TextView
         android:id="@+id/songName"
         android:layout_width="wrap_content"
@@ -61,24 +51,27 @@
         android:layout_alignLeft="@+id/currenTime"
         android:layout_alignParentTop="true"
         android:layout_marginTop="18dp"
+        android:textAppearance="?android:attr/textAppearanceMedium" 
+        android:text="AAA"/>
+
+    <TextView
+        android:id="@+id/finalTime"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignRight="@+id/seekMusic"
+        android:layout_alignTop="@+id/seekMusic"
+        android:layout_marginTop="28dp"
+        android:text="CCC"
         android:textAppearance="?android:attr/textAppearanceMedium" />
 
     <TextView
         android:id="@+id/currenTime"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_above="@+id/finalTime"
-        android:layout_alignLeft="@+id/finalTime"
-        android:layout_marginBottom="14dp"
-        android:textAppearance="?android:attr/textAppearanceMedium" />
-
-    <TextView
-        android:id="@+id/finalTime"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_above="@+id/seekMusic"
+        android:layout_alignBaseline="@+id/finalTime"
+        android:layout_alignBottom="@+id/finalTime"
         android:layout_alignLeft="@+id/seekMusic"
-        android:layout_marginBottom="14dp"
+        android:text="BBB"
         android:textAppearance="?android:attr/textAppearanceMedium" />
 
 </RelativeLayout>
