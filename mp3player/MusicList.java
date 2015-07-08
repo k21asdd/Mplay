@@ -1,7 +1,6 @@
 package com.example.mp3player;
 
 import java.io.File;
-import java.io.FileFilter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -44,21 +43,7 @@ public class MusicList{
 			for(Thread t:thCheck) if(t.isAlive())max=true;
 		}while(max);
 		Log.d("Thread_bian","Done for Waiting thread");
-		/*for(File songName: new File(MusicPath.get(0)).listFiles
-				(new FileFilter(){
-					@Override
-					public boolean accept(File pathname) {
-						// TODO Auto-generated method stub
-						if( pathname.isFile())
-							return pathname.toString().matches("[\\w0-9\\s\\S]+.mp3$");
-						else
-							return false;
-					}
-				})
-			){
-			if(songName.isFile()==false);
-			else MuArrList.add(songName.getPath());
-		}*/
+
 		songs = MuArrList.size();
 		MuArr = new int[songs];
 		for(int i = 0 ; i < songs; i++){
