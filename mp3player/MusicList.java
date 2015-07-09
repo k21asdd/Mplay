@@ -28,7 +28,7 @@ public class MusicList{
 				Environment.DIRECTORY_MUSIC).getPath());
 		for(String path:MusicPath){
 			Log.d("ML", path);
-			for(File song: new File(path).listFiles()){
+			for(File song: new File(path).listFiles()){				
 				if(song.isDirectory() && notInIgnore(song.getName())){
 					thCheck.add(new MusicSearchThread(song, MuArrList));
 					thCheck.get(thCheck.size()-1).start();
@@ -48,7 +48,7 @@ public class MusicList{
 		MuArr = new int[songs];
 		for(int i = 0 ; i < songs; i++){
 			MuArr[i] = i;
-			Log.d("Songs", MuArrList.get(i));
+//			Log.d("Songs", MuArrList.get(i));
 		}
 	}
 	public void shuffle(){
@@ -76,6 +76,9 @@ public class MusicList{
 		current--;
 		return MuArrList.get(MuArr[current]);
 	}
+	public void positionSong(String song){
+		current = MuArrList.indexOf(song);
+	}
 	private boolean isNotExternalStorageReadable(){
 	    String state = Environment.getExternalStorageState();
 	    if (Environment.MEDIA_MOUNTED.equals(state) ||
@@ -90,6 +93,5 @@ public class MusicList{
 		}
 		return true;
 	}
-	
 
 }
