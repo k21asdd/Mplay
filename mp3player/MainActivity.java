@@ -6,6 +6,7 @@ import java.util.concurrent.TimeUnit;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
@@ -20,6 +21,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
+import android.widget.MediaController.MediaPlayerControl;
 import android.widget.SeekBar;
 import android.widget.SeekBar.OnSeekBarChangeListener;
 import android.widget.TextView;
@@ -28,7 +30,8 @@ import android.widget.Toast;
 
 public class MainActivity extends Activity implements 
 MediaPlayer.OnBufferingUpdateListener,
-MediaPlayer.OnPreparedListener{
+MediaPlayer.OnPreparedListener,
+MediaPlayer.OnCompletionListener{
 
 	private Button action,pre,next;
 	private MediaPlayer mp;
@@ -36,13 +39,18 @@ MediaPlayer.OnPreparedListener{
 	private SeekBar MusicBar;
 	private MusicList ML;
 	private Handler seekBarHandler;
-	private Thread seekBarThread;
-	private Runnable seekBarRun;
+	private SeekThread seekBarThread;
+	private final String preference = "BianMP3";
+
 	private boolean init = false;
 	
 	public static final int RUN = 0;
 	public static final int PAUSE = 1;
 	public static final int END = 2;
+	public static final int SK_CHANGE = 3;
+	
+	private static final String LAST_SONG = "LASTSONG";
+	private static final String LAST_SONG_TIME = "LASTSONG_TIME";
     @Override
     protected void onCreate(Bundle savedInstanceState) {
     	super.onCreate(savedInstanceState);
@@ -50,12 +58,6 @@ MediaPlayer.OnPreparedListener{
         
         Log.i("Bian","Create");
         
-        mp = new MediaPlayer();
-        mp.setAudioStreamType(AudioManager.STREAM_MUSIC);
-        mp.setOnBufferingUpdateListener(this);
-        mp.setOnPreparedListener(this);
-        
-        ML = new MusicList();
         action = (Button)findViewById(R.id.action);
         pre = (Button)findViewById(R.id.preSong);
         next = (Button)findViewById(R.id.nextSong);
@@ -63,16 +65,6 @@ MediaPlayer.OnPreparedListener{
         finalTime = (TextView)findViewById(R.id.finalTime);
         songName = (TextView)findViewById(R.id.songName);
         MusicBar = (SeekBar)findViewById(R.id.seekMusic);
-        
-        mp.setOnCompletionListener(new OnCompletionListener() {
-			@Override
-			public void onCompletion(MediaPlayer mp) {
-				// TODO Auto-generated method stub
-				setSong(ML.NextSong(mp.isLooping()));
-				prepareSong();
-				mp.start();
-			}
-		});
        
         action.setOnClickListener(new OnClickListener (){
         	
@@ -91,7 +83,7 @@ MediaPlayer.OnPreparedListener{
 					}
 					else if ( action.getText().toString().equals("¼½©ñ")){
 						mp.start();
-						seekBarThread = new Thread(seekBarRun);
+						seekBarThread = new SeekThread(mp, seekBarHandler);
 						seekBarThread.start();
 						action.setText("¼È°±");
 					}
@@ -139,45 +131,7 @@ MediaPlayer.OnPreparedListener{
 			}
         	
         });
-        
-        MusicBar.setOnSeekBarChangeListener(new OnSeekBarChangeListener() {
-			int progress = 0;
-			boolean User;
-			@Override
-			public void onStopTrackingTouch(SeekBar seekBar) {
-				// TODO Auto-generated method stub
-				if(!init)return;
-				if( User ){
-					mp.seekTo((int)TimeUnit.SECONDS.toMillis(progress));
-					seekBarHandler.obtainMessage(RUN).sendToTarget();
-				}
-			}
-			
-			@Override
-			public void onStartTrackingTouch(SeekBar seekBar) {
-				// TODO Auto-generated method stub
-				
-			}
-			
-			@Override
-			public void onProgressChanged(SeekBar seekBar, int progressValue,
-					boolean fromUser) {
-				// TODO Auto-generated method stub
-				User = fromUser;
-				progress = (int) TimeUnit.MILLISECONDS.toSeconds(progressValue);
-				currenTime.setText(String.format("Current: %d:%d",
-						TimeUnit.SECONDS.toMinutes(progress),
-						progress - TimeUnit.MINUTES.toSeconds(
-								TimeUnit.SECONDS.toMinutes(progress)
-								)
-						)
-					);
-				if( User )
-					seekBarHandler.obtainMessage(PAUSE).sendToTarget();
-					
-			}
-		});
-        
+
         seekBarHandler = new Handler(){
 			@SuppressLint("NewApi")
 			@Override
@@ -185,47 +139,53 @@ MediaPlayer.OnPreparedListener{
 				switch(msg.what){
 				case RUN:
 					MusicBar.setProgress(mp.getCurrentPosition());
-					Log.i("Bian", "Seekbar runs " + (1010 - mp.getCurrentPosition()%1000));
 					break;
 				case PAUSE:
-					Log.i("Bian", "Seekbar pause");
+					Log.i("Handler_bian", "Seekbar pause");
 					break;
 				case END:
 					closeSBT(seekBarThread);
-					Log.i("Bian", "Seekbar end");
+					Log.i("Handler_bian", "Seekbar end");
+					break;
+				case SK_CHANGE:					
+					int progress = msg.getData().getInt("SK_CHANGE");
+					currenTime.setText(String.format("Current: %d:%d",
+						TimeUnit.SECONDS.toMinutes(progress),
+						progress - TimeUnit.MINUTES.toSeconds(
+								TimeUnit.SECONDS.toMinutes(progress)
+								)
+						)
+					);
 					break;
 				}
 			}
 		};
-		seekBarRun = new Runnable(){
-			@Override
-			public void run() {
-				// TODO Auto-generated method stub
-				while(!Thread.currentThread().interrupted()){
-					if( mp != null && mp.isPlaying() ){
-						seekBarHandler.sendMessage(seekBarHandler.obtainMessage(RUN));
-						Log.d("Bian",seekBarThread.getName());
-						try{
-							Thread.sleep(1010 - mp.getCurrentPosition()%1000);
-						}catch(InterruptedException a){
-							Log.d("Bian","Seekbar thread break");
-							break;
-						}
-					}
-				}
-			}
-    	};		
+		
         //start running
-        if(ML.isEmpty())
+    	mp = new MediaPlayer();
+        mp.setOnBufferingUpdateListener(this);
+        mp.setOnPreparedListener(this);
+        mp.setOnCompletionListener(this);
+        
+    	ML = new MusicList();
+    	MusicBar.setOnSeekBarChangeListener(new SeekBarChangeListener(mp,seekBarHandler));
+    	SharedPreferences sp = getSharedPreferences(preference, MODE_PRIVATE);
+    	
+        if(ML.isEmpty()){
         	currenTime.setText("Something wrong");
+        	mp = null;
+        }
         else{
         	init = true;
         	mp.setLooping(true);
-        	setSong(ML.NextSong(true));
+        	String s = sp.getString(LAST_SONG, ML.NextSong(true));
+        	setSong(s);
+        	ML.positionSong(s);
         	prepareSong();
+        	mp.seekTo(sp.getInt(LAST_SONG_TIME, 0));
+        	seekBarHandler.obtainMessage(RUN).sendToTarget();
         }
     }
-
     private void prepareSong(){
     	try {
     		Log.d("initSong", "Prepare");
@@ -258,12 +218,14 @@ MediaPlayer.OnPreparedListener{
 			e.printStackTrace();
 		}
 	}
+//	Close seekbar thread
 	private void closeSBT(Thread sbt){
 		if(sbt != null && sbt.isAlive()){
 			sbt.interrupt();
 			sbt = null;
     	}
 	}
+//  ----Option menu----
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
@@ -282,7 +244,9 @@ MediaPlayer.OnPreparedListener{
         }
         return super.onOptionsItemSelected(item);
     }
-
+//  ----Option menu----    
+    
+//  ----Activity actions----
     @Override
 	protected void onStart() {
 		// TODO Auto-generated method stub
@@ -293,6 +257,12 @@ MediaPlayer.OnPreparedListener{
 	protected void onPause() {
 		Log.i("Bian","Pause");
 		// TODO Auto-generated method stub
+		SharedPreferences sp = getSharedPreferences(preference, MODE_PRIVATE);
+		sp.edit()
+			.clear()
+			.putString(LAST_SONG, ML.CurrSong())
+			.putInt(LAST_SONG_TIME, mp.getCurrentPosition())
+			.commit();
 		super.onPause();
 	}
 	@Override
@@ -310,13 +280,17 @@ MediaPlayer.OnPreparedListener{
 	}
     @Override
     protected void onDestroy(){
-    	Log.i("Bian","Destory");
+    	Log.i("Bian","Destory ");
     	closeSBT(seekBarThread);
-    	if( mp != null )
+    	if( mp != null ){
     		mp.release();
+    	}
     	mp = null;
     	super.onDestroy();
     }
+//  ----Activity actions----    
+    
+//  ----Over write Back action----
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         
@@ -334,6 +308,9 @@ MediaPlayer.OnPreparedListener{
         
         return super.onKeyDown(keyCode, event);
     }
+//  ----Over write Back action----
+    
+//	----Orientation----
     @Override
     public void onConfigurationChanged(Configuration newConfig){
         super.onConfigurationChanged(newConfig);
@@ -345,6 +322,9 @@ MediaPlayer.OnPreparedListener{
             Toast.makeText(this,"portrait",Toast.LENGTH_SHORT).show();
         }
     }
+//  ----Orientation----
+    
+//	----MediaPlayer interface----
 	@Override
 	public void onPrepared(MediaPlayer mp) {
 		// TODO Auto-generated method stub
@@ -359,12 +339,18 @@ MediaPlayer.OnPreparedListener{
 			)
 		);
 	}
-
-
 	@Override
 	public void onBufferingUpdate(MediaPlayer mp, int percent) {
 		// TODO Auto-generated method stub
 		Log.d("Bian", "Buffering : "+Integer.toString(percent));
 		MusicBar.setSecondaryProgress(percent);
 	}
+	@Override
+	public void onCompletion(MediaPlayer mp) {
+		// TODO Auto-generated method stub
+		setSong(ML.NextSong(mp.isLooping()));
+		prepareSong();
+		mp.start();
+	}
+//  ----MediaPlayer interface----
 }
