@@ -2,6 +2,7 @@ package com.example.mp3player;
 
 import java.io.IOException;
 import java.lang.ref.WeakReference;
+import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
 import android.app.Service;
@@ -35,15 +36,13 @@ Runnable{
 	private Messenger cMessenger;
 	private boolean service;
 	public boolean IsActivityAlive;
-	public static final int ACT_OPEN = 0;
-	public static final int ACT_CLOSE = 1;
-	public static final int MP_PLAY = 2;
-	public static final int MP_PAUSE = 3;
-	public static final int MP_NEXT = 4;
-	public static final int MP_PRE = 5;
-	public static final int MP_CHANGE_SONG = 6;
-	public static final int SK_CHANGE = 7;
-	public static final int BUF_UPDATE = 8;
+	public static final int MP_PLAY = 0;
+	public static final int MP_PAUSE = 1;
+	public static final int MP_NEXT = 2;
+	public static final int MP_PRE = 3;
+	public static final int MP_CHANGE_SONG = 4;
+	public static final int SK_CHANGE = 5;
+	public static final int BUF_UPDATE = 6;
 	
 	//Preference
 	private final String preference = "BianMP3";
@@ -69,13 +68,6 @@ Runnable{
 			if( !service.init )return;
 			
 			switch(msg.what){
-			case MplayerService.ACT_OPEN:
-				service.IsActivityAlive = true;
-				break;
-			case MplayerService.ACT_CLOSE:
-				service.IsActivityAlive = false;
-				service.closeSeekThread();
-				break;
 			case MplayerService.MP_PLAY:
 				service.play();
 				service.seekThread = new Thread(service);
@@ -108,6 +100,7 @@ Runnable{
 		super.onCreate();
 		
 		mMessenger = new Messenger(mHandler);
+		cMessenger = null;
 		mp = new MediaPlayer();
 		mp.setLooping(true);
 		ML = new MusicList();
@@ -124,8 +117,17 @@ Runnable{
 	@Override
 	public IBinder onBind(Intent intent) {
 		// TODO Auto-generated method stub
+		IsActivityAlive = true;
+		seekThread.start();
 		return mMessenger.getBinder();
 	}
+	@Override
+	public boolean onUnbind(Intent intent) {
+		IsActivityAlive = false;
+		cMessenger = null;
+		closeSeekThread();
+		return super.onUnbind(intent);
+	};
 	
 	@Override
 	public void onDestroy() {
@@ -151,6 +153,8 @@ Runnable{
 		Log.i("Service_bian", "°õ¦æ");
 		return super.onStartCommand(intent, flags, startId);
 	}
+	
+	//Player functions
 	private void play(){
 			mp.start();
 	}
@@ -216,12 +220,8 @@ Runnable{
 			e.printStackTrace();
 		}
 	}
-	private void closeSeekThread(){
-		if(seekThread != null && seekThread.isAlive()){
-			seekThread.interrupt();
-			seekThread = null;
-		}
-	}
+	//Player functions
+	
 //  ----MediaPlayer interface----
 	@Override
 	public void onCompletion(MediaPlayer mp) {
@@ -233,50 +233,45 @@ Runnable{
 	@Override
 	public void onPrepared(MediaPlayer mp) {
 		// TODO Auto-generated method stub
-		
-		MusicBar.setMax(mp.getDuration());
-		finalTime.setText(String.format("Length: %d:%d",
-			TimeUnit.MILLISECONDS.toMinutes(mp.getDuration()),
-			TimeUnit.MILLISECONDS.toSeconds(mp.getDuration())-
-			TimeUnit.MINUTES.toSeconds(
-					TimeUnit.MILLISECONDS.toMinutes(mp.getDuration()
-					)
-				)
-			)
-		);
+		Bundle data = new Bundle();
+		data.putInt("MCS_DURATION", mp.getDuration());
+		data.putString("MCS_NAME", ML.CurrSong());
+		sendMsg(MP_CHANGE_SONG, data, cMessenger);
 	}
 	@Override
 	public void onBufferingUpdate(MediaPlayer mp, int percent) {
 		// TODO Auto-generated method stub
-		Log.d("Bian", "Buffering : "+Integer.toString(percent));
-		MusicBar.setSecondaryProgress(percent);
+		Bundle data = new Bundle();
+		data.putInt("BUF_PROGRESS", percent);
+		sendMsg(BUF_UPDATE, data, cMessenger);
+		
 	}
 //  ----MediaPlayer interface----
 
+//	----Seekbar thread----
+	private void closeSeekThread(){
+		if(seekThread != null && seekThread.isAlive()){
+			seekThread.interrupt();
+			seekThread = null;
+		}
+	}
+	
 	@Override
 	public void run() {
 		// TODO Auto-generated method stub
 		while(!Thread.currentThread().interrupted()){
-			Message msg = new Message();
 			Bundle data = new Bundle();
 			data.putInt("Duration", mp.getCurrentPosition());
-			msg.setData(data);
-			msg.what = MplayerService.SK_CHANGE;
-			try {
-				mMessenger.send(msg);
-			} catch (RemoteException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			};
-			try{
-				Thread.sleep(1010 - mp.getCurrentPosition()%1000);
-			}catch(InterruptedException a){
-				Log.d("Bian","Seekbar thread break");
-				break;
-			}
+			sendMsg(SK_CHANGE, data, cMessenger);
 		}
 	}
+//	----Seekbar thread----
+	
 	private void sendMsg(int what, Messenger mm){
+		if(mm == null){
+			Log.e("Service_bian", "Service : cMessenger is null");
+			return;
+		}
 		Message msg = new Message();
 		msg.what = what;
 		try {
@@ -287,6 +282,10 @@ Runnable{
 		}
 	}
 	private void sendMsg(int what, Bundle data,  Messenger mm){
+		if(mm == null){
+			Log.e("Service_bian", "Service : cMessenger is null");
+			return;
+		}
 		Message msg = new Message();
 		msg.what = what;
 		msg.setData(data);
