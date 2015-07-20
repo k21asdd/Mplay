@@ -30,16 +30,13 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 
-public class MainActivity extends Activity implements 
-MediaPlayer.OnBufferingUpdateListener,
-MediaPlayer.OnPreparedListener{
+public class MainActivity extends Activity{
 
 	private Button action,pre,next;
 	private TextView currenTime, finalTime, songName; 
 	private SeekBar MusicBar;
 	
-	//Is this right?
-	
+	//Is this right for memory leak?
 	private static final class seekBarHandler extends Handler{
 		WeakReference<MainActivity> mAct;
 		public seekBarHandler(MainActivity mm){
@@ -53,18 +50,26 @@ MediaPlayer.OnPreparedListener{
 			switch(msg.what){
 			case MplayerService.MP_CHANGE_SONG:
 				Log.i("Handler_bian", "MP_CHANGE_SONG");
+				Bundle data = msg.getData();
+				act.newSong(data.getInt("MCS_DURATION"), data.getString("MCS_NAME"));
 				break;
 			case MplayerService.SK_CHANGE:					
 				int progress = msg.getData().getInt("Duration");
-				act.currenTime.setText(String.format("Current: %d:%d",
+				act.MusicBar.setProgress(progress);
+				act.currenTime.setText(String.format("%d:%d",
 					TimeUnit.SECONDS.toMinutes(progress),
 					progress - TimeUnit.MINUTES.toSeconds(
 							TimeUnit.SECONDS.toMinutes(progress)
 							)
 					)
 				);
-				break;
+			break;
+			case MplayerService.BUF_UPDATE:
+				Log.d("Bian", "Buffering : "+Integer.toString(msg.getData().getInt("BUF_PROGRESS")));
+				act.MusicBar.setSecondaryProgress(msg.getData().getInt("BUF_PROGRESS"));
+			break;
 			}
+			
 		}
 	};
 	private final seekBarHandler mHandler = new seekBarHandler(this);
@@ -130,7 +135,7 @@ MediaPlayer.OnPreparedListener{
 			@Override
 			public void onClick(View v) {
 				// TODO Auto-generated method stub
-				sendMsg(MplayerService.ACT_OPEN,cMessanger);
+				sendMsg(MplayerService.MP_NEXT,cMessanger);
 			}
         });
         
@@ -143,15 +148,44 @@ MediaPlayer.OnPreparedListener{
 			}
         });
 
-		
         //start running
-    	MusicBar.setOnSeekBarChangeListener(new SeekBarChangeListener());
-    	
-    	Intent startIntent = new Intent(MainActivity.this, MplayerService.class);
-		startService(startIntent);
-		bindService(startIntent, MPSconn, Context.BIND_AUTO_CREATE);
-		
-		
+    	MusicBar.setOnSeekBarChangeListener(new OnSeekBarChangeListener() {
+    		
+    		int progress = 0;
+    		boolean User;
+    		@Override
+    		public void onStopTrackingTouch(SeekBar seekBar) {
+    			// TODO Auto-generated method stub
+    			if( User ){
+    				Message msg = new Message();
+    				Bundle data = new Bundle();
+    				data.putInt("Duration", progress);
+    				msg.what = MplayerService.SK_CHANGE;
+    				msg.setData(data);
+    				try {
+    					cMessanger.send(msg);
+    					mMessanger.send(msg);
+    				} catch (RemoteException e) {
+    					// TODO Auto-generated catch block
+    					e.printStackTrace();
+    				}
+    			}
+    		}
+    		
+    		@Override
+    		public void onStartTrackingTouch(SeekBar seekBar) {
+    			// TODO Auto-generated method stub
+    			
+    		}
+    		
+    		@Override
+    		public void onProgressChanged(SeekBar seekBar, int progressValue,
+    				boolean fromUser) {
+    			// TODO Auto-generated method stub
+    			User = fromUser;
+    			progress = (int) TimeUnit.MILLISECONDS.toSeconds(progressValue);
+    		}
+		});	
     }
 //  ----Option menu----
     @Override
@@ -180,7 +214,10 @@ MediaPlayer.OnPreparedListener{
 		// TODO Auto-generated method stub
 		Log.i("Bian","Start");
 		super.onStart();
-		sendMsg(MplayerService.ACT_OPEN, cMessanger);
+		Intent startIntent = new Intent(MainActivity.this, MplayerService.class);
+		startService(startIntent);
+		bindService(startIntent, MPSconn, Context.BIND_AUTO_CREATE);
+		
 	}
 	@Override
 	protected void onPause() {
@@ -188,7 +225,6 @@ MediaPlayer.OnPreparedListener{
 		
 		// TODO Auto-generated method stub
 		super.onPause();
-		sendMsg(MplayerService.ACT_CLOSE, cMessanger);
 	}
 	@Override
 	protected void onResume() {
@@ -201,7 +237,8 @@ MediaPlayer.OnPreparedListener{
 	protected void onStop() {
 		Log.i("Bian","Stop");
 		// TODO Auto-generated method stub
-		super.onStop();
+		super.onStop();  
+		unbindService(MPSconn);
 	}
     @Override
     protected void onDestroy(){
@@ -212,6 +249,52 @@ MediaPlayer.OnPreparedListener{
     }
 //  ----Activity actions----    
     
+
+	private void newSong(int duration, String name){
+		MusicBar.setMax(duration);
+		MusicBar.setProgress(0);
+		currenTime.setText("0:0");
+		finalTime.setText(String.format("%d:%d",
+			TimeUnit.MILLISECONDS.toMinutes(duration),
+			TimeUnit.MILLISECONDS.toSeconds(duration)-
+			TimeUnit.MINUTES.toSeconds(
+					TimeUnit.MILLISECONDS.toMinutes(duration
+					)
+				)
+			)
+		);
+	}
+	private void sendMsg(int what, Messenger mm){
+		if(mm == null){
+			Log.e("Service_bian", "Activity : cMessenger is null");
+			return;
+		}
+		Message msg = new Message();
+		msg.what = what;
+		try {
+			mm.send(msg);
+		} catch (RemoteException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	private void sendMsg(int what, Bundle data,  Messenger mm){
+		if(mm == null){
+			Log.e("Service_bian", "Activity : cMessenger is null");
+			return;
+		}
+		Message msg = new Message();
+		msg.what = what;
+		msg.setData(data);
+		try {
+			mm.send(msg);
+		} catch (RemoteException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
+//  ----Below code are just configuration for somethings----
 //  ----Over write Back action----
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
@@ -244,105 +327,4 @@ MediaPlayer.OnPreparedListener{
         }
     }
 //  ----Orientation----
-    
-//	----MediaPlayer interface----
-	@Override
-	public void onPrepared(MediaPlayer mp) {
-		// TODO Auto-generated method stub
-		MusicBar.setMax(mp.getDuration());
-		finalTime.setText(String.format("Length: %d:%d",
-			TimeUnit.MILLISECONDS.toMinutes(mp.getDuration()),
-			TimeUnit.MILLISECONDS.toSeconds(mp.getDuration())-
-			TimeUnit.MINUTES.toSeconds(
-					TimeUnit.MILLISECONDS.toMinutes(mp.getDuration()
-					)
-				)
-			)
-		);
-	}
-	@Override
-	public void onBufferingUpdate(MediaPlayer mp, int percent) {
-		// TODO Auto-generated method stub
-		Log.d("Bian", "Buffering : "+Integer.toString(percent));
-		MusicBar.setSecondaryProgress(percent);
-	}
-
-//  ----MediaPlayer interface----
-	private final class SeekBarChangeListener implements OnSeekBarChangeListener{
-		
-		int progress = 0;
-		boolean User;
-		
-		public SeekBarChangeListener() {
-			// TODO Auto-generated constructor stub
-		}
-		@Override
-		public void onStopTrackingTouch(SeekBar seekBar) {
-			// TODO Auto-generated method stub
-			if( User ){
-				Message msg = new Message();
-				Bundle data = new Bundle();
-				data.putInt("Duration", progress);
-				msg.what = MplayerService.SK_CHANGE;
-				msg.setData(data);
-				try {
-					cMessanger.send(msg);
-					mMessanger.send(msg);
-				} catch (RemoteException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
-		}
-		
-		@Override
-		public void onStartTrackingTouch(SeekBar seekBar) {
-			// TODO Auto-generated method stub
-			
-		}
-		
-		@Override
-		public void onProgressChanged(SeekBar seekBar, int progressValue,
-				boolean fromUser) {
-			// TODO Auto-generated method stub
-			User = fromUser;
-			progress = (int) TimeUnit.MILLISECONDS.toSeconds(progressValue);
-			Message msg = new Message();
-			Bundle data = new Bundle();
-			data.putInt("SK_CHANGE", progress);
-			msg.setData(data);
-			msg.what = MplayerService.SK_CHANGE;
-			try {
-				mMessanger.send(msg);
-				if( User )
-					cMessanger.send(msg);
-			} catch (RemoteException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
-
-	}
-	private void sendMsg(int what, Messenger mm){
-		Message msg = new Message();
-		msg.what = what;
-		try {
-			mm.send(msg);
-		} catch (RemoteException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
-	private void sendMsg(int what, Bundle data,  Messenger mm){
-		Message msg = new Message();
-		msg.what = what;
-		msg.setData(data);
-		try {
-			mm.send(msg);
-		} catch (RemoteException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
-
 }
