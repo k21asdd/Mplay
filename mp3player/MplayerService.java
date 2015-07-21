@@ -8,6 +8,7 @@ import java.util.concurrent.TimeUnit;
 import android.app.Service;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.media.MediaMetadataRetriever;
 import android.media.MediaPlayer;
 import android.media.MediaPlayer.OnBufferingUpdateListener;
 import android.media.MediaPlayer.OnPreparedListener;
@@ -71,36 +72,42 @@ Runnable{
 			
 			switch(msg.what){
 			case ACT_OPEN:
-				Log.i("Handler_bian", "SER : ACT_OPEN");
+				Log.i("Handler_bian", "SER : Get ACT_OPEN");
 				service.cMessenger =  msg.replyTo;
-				service.onPrepared(service.mp);
+				service.changeSong();
+				//set text of start time
+				Bundle data = new Bundle();
+				data.putInt("Duration", service.mp.getCurrentPosition());
+				service.sendMsg(SK_CHANGE, data, service.cMessenger);
 				break;
 			case ACT_CLOSE:
-				Log.i("Handler_bian", "SER : ACT_CLOSE");
+				Log.i("Handler_bian", "SER : Get ACT_CLOSE");
 				service.cMessenger = null;
 				break;
 			case MP_PLAY:
-				Log.i("Handler_bian", "SER : MP_PLAY");
+				Log.i("Handler_bian", "SER : Get MP_PLAY");
 				service.play();
 				service.seekThread = new Thread(service);
 				service.seekThread.start();
 				break;
 			case MP_PAUSE:
-				Log.i("Handler_bian", "SER : MP_PAUSE");
+				Log.i("Handler_bian", "SER : Get MP_PAUSE");
 				service.pause();
 				//User press pause button
 				service.closeSeekThread();
 				break;
 			case MP_NEXT:
-				Log.i("Handler_bian", "SER : MP_NEXT");
+				Log.i("Handler_bian", "SER : Get MP_NEXT");
 				service.next();
+				service.changeSong();
 				break;
 			case MP_PRE:
-				Log.i("Handler_bian", "SER : MP_PRE");
+				Log.i("Handler_bian", "SER : Get MP_PRE");
 				service.pre();
+				service.changeSong();
 				break;
 			case SK_CHANGE:
-				Log.i("Handler_bian", "SER : SK_CHANGE");
+				Log.i("Handler_bian", "SER : Get SK_CHANGE");
 				//change by user
 				service.seekTo(msg.getData().getInt("Duration"));
 				break;
@@ -126,8 +133,17 @@ Runnable{
 			init = false;
 		}else{
 			init = true;
-			setSong(ML.NextSong(mp.isLooping()));
-			prepareSong();
+			SharedPreferences sp = getSharedPreferences(preference, MODE_PRIVATE);
+			String lSong = sp.getString(LAST_SONG, null);
+			if( lSong != null){
+				setSong(lSong);
+				ML.positionSong(lSong);
+				prepareSong();
+				mp.seekTo(sp.getInt(LAST_SONG_TIME, mp.getCurrentPosition()));
+			}else{
+				setSong(ML.NextSong(mp.isLooping()));
+				prepareSong();
+			}
 		}
 		
 		Log.i("Service_bian", "«Ø¥ß");
@@ -254,6 +270,8 @@ Runnable{
 	@Override
 	public void onPrepared(MediaPlayer mp) {
 		// TODO Auto-generated method stub
+		// http://stackoverflow.com/questions/22827190/android-mediaplayer-onpreparedlistener
+		// or called when first prepare (It's mean that use async?)
 		Log.i("Handler_bian","Send message when music prepared !");
 		changeSong();
 	}
@@ -267,8 +285,11 @@ Runnable{
 	}
 	private void changeSong(){
 		Bundle data = new Bundle();
+		MediaMetadataRetriever mmr = new MediaMetadataRetriever();
+		mmr.setDataSource(ML.CurrSong());
 		data.putInt("MCS_DURATION", mp.getDuration());
-		data.putString("MCS_NAME", ML.CurrSong());
+		data.putString("MCS_NAME", mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE));
+		Log.i("Handler_bian","SER : Send MP_CHANGE_SONG");
 		sendMsg(MP_CHANGE_SONG, data, cMessenger);
 	}
 //  ----MediaPlayer interface----
