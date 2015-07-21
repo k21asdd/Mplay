@@ -49,23 +49,25 @@ public class MainActivity extends Activity{
 			if(act == null)return;
 			switch(msg.what){
 			case MplayerService.MP_CHANGE_SONG:
-				Log.i("Handler_bian", "MP_CHANGE_SONG");
+				Log.i("Handler_bian", "ACT : MP_CHANGE_SONG");
 				Bundle data = msg.getData();
 				act.newSong(data.getInt("MCS_DURATION"), data.getString("MCS_NAME"));
 				break;
-			case MplayerService.SK_CHANGE:					
+			case MplayerService.SK_CHANGE:
 				int progress = msg.getData().getInt("Duration");
 				act.MusicBar.setProgress(progress);
 				act.currenTime.setText(String.format("%d:%d",
-					TimeUnit.SECONDS.toMinutes(progress),
-					progress - TimeUnit.MINUTES.toSeconds(
-							TimeUnit.SECONDS.toMinutes(progress)
+					TimeUnit.MILLISECONDS.toMinutes(progress),
+					TimeUnit.MILLISECONDS.toSeconds(progress) - 
+					TimeUnit.MINUTES.toSeconds(
+							TimeUnit.MILLISECONDS.toMinutes(progress)
 							)
 					)
 				);
 			break;
 			case MplayerService.BUF_UPDATE:
-				Log.d("Bian", "Buffering : "+Integer.toString(msg.getData().getInt("BUF_PROGRESS")));
+				Log.i("Handler_bian", "ACT : BUF_UPDATE "
+						+Integer.toString(msg.getData().getInt("BUF_PROGRESS")));
 				act.MusicBar.setSecondaryProgress(msg.getData().getInt("BUF_PROGRESS"));
 			break;
 			}
@@ -82,11 +84,14 @@ public class MainActivity extends Activity{
 		public void onServiceConnected(ComponentName name, IBinder service) {
 			// TODO Auto-generated method stub
 			cMessanger = new Messenger(service);
+			sendMsg(MplayerService.ACT_OPEN, cMessanger);
+			Log.i("Service_bian", "SER : onServiceConnected " +cMessanger.toString());
 		}
 
 		@Override
 		public void onServiceDisconnected(ComponentName name) {
 			// TODO Auto-generated method stub
+			Log.i("Service_bian", "SER : onServiceDisconnected");
 			cMessanger = null;
 		}
 	};
@@ -157,18 +162,10 @@ public class MainActivity extends Activity{
     		public void onStopTrackingTouch(SeekBar seekBar) {
     			// TODO Auto-generated method stub
     			if( User ){
-    				Message msg = new Message();
     				Bundle data = new Bundle();
     				data.putInt("Duration", progress);
-    				msg.what = MplayerService.SK_CHANGE;
-    				msg.setData(data);
-    				try {
-    					cMessanger.send(msg);
-    					mMessanger.send(msg);
-    				} catch (RemoteException e) {
-    					// TODO Auto-generated catch block
-    					e.printStackTrace();
-    				}
+    				sendMsg(MplayerService.SK_CHANGE, data, cMessanger);
+    				sendMsg(MplayerService.SK_CHANGE, data, mMessanger);
     			}
     		}
     		
@@ -183,7 +180,7 @@ public class MainActivity extends Activity{
     				boolean fromUser) {
     			// TODO Auto-generated method stub
     			User = fromUser;
-    			progress = (int) TimeUnit.MILLISECONDS.toSeconds(progressValue);
+    			progress = progressValue;
     		}
 		});	
     }
@@ -222,7 +219,7 @@ public class MainActivity extends Activity{
 	@Override
 	protected void onPause() {
 		Log.i("Bian","Pause");
-		
+		sendMsg(MplayerService.ACT_CLOSE, cMessanger);
 		// TODO Auto-generated method stub
 		super.onPause();
 	}
@@ -231,6 +228,7 @@ public class MainActivity extends Activity{
 		// TODO Auto-generated method stub
 		Log.i("Bian","Resume");
 		Log.i("Bian",Thread.currentThread().getName());
+		
 		super.onResume();
 	}
 	@Override
@@ -251,6 +249,7 @@ public class MainActivity extends Activity{
     
 
 	private void newSong(int duration, String name){
+		songName.setText(name);
 		MusicBar.setMax(duration);
 		MusicBar.setProgress(0);
 		currenTime.setText("0:0");
@@ -265,12 +264,14 @@ public class MainActivity extends Activity{
 		);
 	}
 	private void sendMsg(int what, Messenger mm){
+		Log.i("Service_bian", "Activity : send Msg");
 		if(mm == null){
 			Log.e("Service_bian", "Activity : cMessenger is null");
 			return;
 		}
 		Message msg = new Message();
 		msg.what = what;
+		msg.replyTo = mMessanger;
 		try {
 			mm.send(msg);
 		} catch (RemoteException e) {
@@ -279,6 +280,7 @@ public class MainActivity extends Activity{
 		}
 	}
 	private void sendMsg(int what, Bundle data,  Messenger mm){
+		Log.i("Service_bian", "Activity : send Msg");
 		if(mm == null){
 			Log.e("Service_bian", "Activity : cMessenger is null");
 			return;
@@ -286,6 +288,7 @@ public class MainActivity extends Activity{
 		Message msg = new Message();
 		msg.what = what;
 		msg.setData(data);
+		msg.replyTo = mMessanger;
 		try {
 			mm.send(msg);
 		} catch (RemoteException e) {
