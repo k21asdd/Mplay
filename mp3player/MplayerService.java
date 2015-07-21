@@ -43,12 +43,14 @@ Runnable{
 	public static final int MP_CHANGE_SONG = 4;
 	public static final int SK_CHANGE = 5;
 	public static final int BUF_UPDATE = 6;
+	public static final int ACT_OPEN = 7;
+	public static final int ACT_CLOSE = 8;
 	
 	//Preference
 	private final String preference = "BianMP3";
 	private static final String LAST_SONG = "LASTSONG";
 	private static final String LAST_SONG_TIME = "LASTSONG_TIME";
-	private final SharedPreferences sp = this.getSharedPreferences(preference, MODE_PRIVATE);
+
 	
 	//Preference
 	
@@ -68,21 +70,37 @@ Runnable{
 			if( !service.init )return;
 			
 			switch(msg.what){
-			case MplayerService.MP_PLAY:
+			case ACT_OPEN:
+				Log.i("Handler_bian", "SER : ACT_OPEN");
+				service.cMessenger =  msg.replyTo;
+				service.onPrepared(service.mp);
+				break;
+			case ACT_CLOSE:
+				Log.i("Handler_bian", "SER : ACT_CLOSE");
+				service.cMessenger = null;
+				break;
+			case MP_PLAY:
+				Log.i("Handler_bian", "SER : MP_PLAY");
 				service.play();
 				service.seekThread = new Thread(service);
+				service.seekThread.start();
 				break;
-			case MplayerService.MP_PAUSE:
+			case MP_PAUSE:
+				Log.i("Handler_bian", "SER : MP_PAUSE");
 				service.pause();
+				//User press pause button
 				service.closeSeekThread();
 				break;
-			case MplayerService.MP_NEXT:
+			case MP_NEXT:
+				Log.i("Handler_bian", "SER : MP_NEXT");
 				service.next();
 				break;
-			case MplayerService.MP_PRE:
+			case MP_PRE:
+				Log.i("Handler_bian", "SER : MP_PRE");
 				service.pre();
 				break;
-			case MplayerService.SK_CHANGE:
+			case SK_CHANGE:
+				Log.i("Handler_bian", "SER : SK_CHANGE");
 				//change by user
 				service.seekTo(msg.getData().getInt("Duration"));
 				break;
@@ -100,13 +118,14 @@ Runnable{
 		super.onCreate();
 		
 		mMessenger = new Messenger(mHandler);
-		cMessenger = null;
 		mp = new MediaPlayer();
 		mp.setLooping(true);
 		ML = new MusicList();
 		if(ML.isEmpty()){
+			Log.d("Songs","ML is empty");
 			init = false;
 		}else{
+			init = true;
 			setSong(ML.NextSong(mp.isLooping()));
 			prepareSong();
 		}
@@ -118,13 +137,15 @@ Runnable{
 	public IBinder onBind(Intent intent) {
 		// TODO Auto-generated method stub
 		IsActivityAlive = true;
-		seekThread.start();
+		if(seekThread == null)
+			seekThread = new Thread(this);
+		if(mp.isPlaying())
+			seekThread.start();
 		return mMessenger.getBinder();
 	}
 	@Override
 	public boolean onUnbind(Intent intent) {
 		IsActivityAlive = false;
-		cMessenger = null;
 		closeSeekThread();
 		return super.onUnbind(intent);
 	};
@@ -233,10 +254,8 @@ Runnable{
 	@Override
 	public void onPrepared(MediaPlayer mp) {
 		// TODO Auto-generated method stub
-		Bundle data = new Bundle();
-		data.putInt("MCS_DURATION", mp.getDuration());
-		data.putString("MCS_NAME", ML.CurrSong());
-		sendMsg(MP_CHANGE_SONG, data, cMessenger);
+		Log.i("Handler_bian","Send message when music prepared !");
+		changeSong();
 	}
 	@Override
 	public void onBufferingUpdate(MediaPlayer mp, int percent) {
@@ -245,6 +264,12 @@ Runnable{
 		data.putInt("BUF_PROGRESS", percent);
 		sendMsg(BUF_UPDATE, data, cMessenger);
 		
+	}
+	private void changeSong(){
+		Bundle data = new Bundle();
+		data.putInt("MCS_DURATION", mp.getDuration());
+		data.putString("MCS_NAME", ML.CurrSong());
+		sendMsg(MP_CHANGE_SONG, data, cMessenger);
 	}
 //  ----MediaPlayer interface----
 
@@ -260,16 +285,23 @@ Runnable{
 	public void run() {
 		// TODO Auto-generated method stub
 		while(!Thread.currentThread().interrupted()){
+			if(mp.getCurrentPosition() < 0) continue;
 			Bundle data = new Bundle();
 			data.putInt("Duration", mp.getCurrentPosition());
 			sendMsg(SK_CHANGE, data, cMessenger);
+			try {
+				Thread.sleep(1010 - mp.getCurrentPosition()%1000);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				Log.i("Thread_bian", "SeekBar thread interrupt");
+			}
 		}
 	}
 //	----Seekbar thread----
 	
 	private void sendMsg(int what, Messenger mm){
 		if(mm == null){
-			Log.e("Service_bian", "Service : cMessenger is null");
+			Log.d("Service_bian", "Service : cMessenger is null");
 			return;
 		}
 		Message msg = new Message();
@@ -283,7 +315,7 @@ Runnable{
 	}
 	private void sendMsg(int what, Bundle data,  Messenger mm){
 		if(mm == null){
-			Log.e("Service_bian", "Service : cMessenger is null");
+			Log.d("Service_bian", "Service : cMessenger is null");
 			return;
 		}
 		Message msg = new Message();
