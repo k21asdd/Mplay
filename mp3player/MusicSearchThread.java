@@ -27,12 +27,6 @@ public class MusicSearchThread extends Thread{
 			if(subF.isFile() && acceptMp3(subF)){
 				synchronized(MuArrList){
 					MuArrList.add(subF.getPath());
-					MediaMetadataRetriever mmr = new MediaMetadataRetriever();
-					mmr.setDataSource(subF.getPath());
-					Log.i("Songs",mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUM)+" "+
-							mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST)+" "+
-							mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE)+" "+
-							mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_AUTHOR));
 				}
 			}else if(subF.isDirectory()){
 				recFindMusic(subF);
