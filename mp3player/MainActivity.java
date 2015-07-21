@@ -49,7 +49,7 @@ public class MainActivity extends Activity{
 			if(act == null)return;
 			switch(msg.what){
 			case MplayerService.MP_CHANGE_SONG:
-				Log.i("Handler_bian", "ACT : MP_CHANGE_SONG");
+				Log.i("Handler_bian", "ACT : Get MP_CHANGE_SONG");
 				Bundle data = msg.getData();
 				act.newSong(data.getInt("MCS_DURATION"), data.getString("MCS_NAME"));
 				break;
@@ -85,13 +85,13 @@ public class MainActivity extends Activity{
 			// TODO Auto-generated method stub
 			cMessanger = new Messenger(service);
 			sendMsg(MplayerService.ACT_OPEN, cMessanger);
-			Log.i("Service_bian", "SER : onServiceConnected " +cMessanger.toString());
+			Log.i("Service_bian", "ACT : onServiceConnected " +cMessanger.toString());
 		}
 
 		@Override
 		public void onServiceDisconnected(ComponentName name) {
 			// TODO Auto-generated method stub
-			Log.i("Service_bian", "SER : onServiceDisconnected");
+			Log.i("Service_bian", "ACT : onServiceDisconnected");
 			cMessanger = null;
 		}
 	};
@@ -119,11 +119,13 @@ public class MainActivity extends Activity{
 				
 				try {
 					if( action.getText().toString().equals("¼È°±")){
+						Log.i("Handler_bian","ACT : Send MP_PAUSE");
 						sendMsg(MplayerService.MP_PAUSE,cMessanger);
 						action.setText("¼½©ñ");
 			        	
 					}
 					else if ( action.getText().toString().equals("¼½©ñ")){
+						Log.i("Handler_bian","ACT : Send MP_PLAY");
 						sendMsg(MplayerService.MP_PLAY,cMessanger);
 						action.setText("¼È°±");
 					}
@@ -140,6 +142,7 @@ public class MainActivity extends Activity{
 			@Override
 			public void onClick(View v) {
 				// TODO Auto-generated method stub
+				Log.i("Handler_bian","ACT : Send MP_NEXT");
 				sendMsg(MplayerService.MP_NEXT,cMessanger);
 			}
         });
@@ -149,6 +152,7 @@ public class MainActivity extends Activity{
 			@Override
 			public void onClick(View v) {
 				// TODO Auto-generated method stub
+				Log.i("Handler_bian","ACT : Send MP_PRE");
 				sendMsg(MplayerService.MP_PRE,cMessanger);
 			}
         });
@@ -164,6 +168,7 @@ public class MainActivity extends Activity{
     			if( User ){
     				Bundle data = new Bundle();
     				data.putInt("Duration", progress);
+    				Log.i("Handler_bian","ACT : Send SK_CHANGE");
     				sendMsg(MplayerService.SK_CHANGE, data, cMessanger);
     				sendMsg(MplayerService.SK_CHANGE, data, mMessanger);
     			}
