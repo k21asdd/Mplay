@@ -99,12 +99,10 @@ Runnable{
 			case MP_NEXT:
 				Log.i("Handler_bian", "SER : Get MP_NEXT");
 				service.next();
-				service.changeSong();
 				break;
 			case MP_PRE:
 				Log.i("Handler_bian", "SER : Get MP_PRE");
 				service.pre();
-				service.changeSong();
 				break;
 			case SK_CHANGE:
 				Log.i("Handler_bian", "SER : Get SK_CHANGE");
@@ -127,6 +125,8 @@ Runnable{
 		mMessenger = new Messenger(mHandler);
 		mp = new MediaPlayer();
 		mp.setLooping(true);
+		mp.setOnCompletionListener(this);
+		mp.setOnPreparedListener(this);
 		ML = new MusicList();
 		if(ML.isEmpty()){
 			Log.d("Songs","ML is empty");
@@ -157,12 +157,14 @@ Runnable{
 			seekThread = new Thread(this);
 		if(mp.isPlaying())
 			seekThread.start();
+		Log.i("Service_bian", "onBind");
 		return mMessenger.getBinder();
 	}
 	@Override
 	public boolean onUnbind(Intent intent) {
 		IsActivityAlive = false;
 		closeSeekThread();
+		Log.i("Service_bian", "onUnbind");
 		return super.onUnbind(intent);
 	};
 	
@@ -231,6 +233,7 @@ Runnable{
     	try {
     		Log.d("initSong", "Prepare");
 			mp.prepare();
+			//changeSong();
 		} catch (IllegalStateException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -241,6 +244,7 @@ Runnable{
     }
 	private void setSong(String song){
 		try {
+			Log.d("initSong", "Set song");
 			mp.reset();
 			mp.setDataSource(song);
 		} catch (IllegalArgumentException e) {
@@ -271,8 +275,7 @@ Runnable{
 	public void onPrepared(MediaPlayer mp) {
 		// TODO Auto-generated method stub
 		// http://stackoverflow.com/questions/22827190/android-mediaplayer-onpreparedlistener
-		// or called when first prepare (It's mean that use async?)
-		Log.i("Handler_bian","Send message when music prepared !");
+		Log.i("initSong","Send message when music prepared !");
 		changeSong();
 	}
 	@Override
