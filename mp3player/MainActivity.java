@@ -269,9 +269,8 @@ public class MainActivity extends Activity{
 		);
 	}
 	private void sendMsg(int what, Messenger mm){
-		Log.i("Service_bian", "Activity : send Msg");
 		if(mm == null){
-			Log.e("Service_bian", "Activity : cMessenger is null");
+			Log.e("Handler_bian", "Activity : cMessenger is null");
 			return;
 		}
 		Message msg = new Message();
@@ -285,9 +284,8 @@ public class MainActivity extends Activity{
 		}
 	}
 	private void sendMsg(int what, Bundle data,  Messenger mm){
-		Log.i("Service_bian", "Activity : send Msg");
 		if(mm == null){
-			Log.e("Service_bian", "Activity : cMessenger is null");
+			Log.e("Handler_bian", "Activity : cMessenger is null");
 			return;
 		}
 		Message msg = new Message();
