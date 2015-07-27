@@ -187,7 +187,7 @@ public class MainActivity extends Activity{
     			User = fromUser;
     			progress = progressValue;
     		}
-		});	
+		});
     }
 //  ----Option menu----
     @Override
@@ -217,9 +217,14 @@ public class MainActivity extends Activity{
 		Log.i("Bian","Start");
 		super.onStart();
 		Intent startIntent = new Intent(MainActivity.this, MplayerService.class);
+		long start = System.currentTimeMillis();
 		startService(startIntent);
+		Log.d("Time", "Act startService : "+
+				(System.currentTimeMillis() - start));
+		start = System.currentTimeMillis();
 		bindService(startIntent, MPSconn, Context.BIND_AUTO_CREATE);
-		
+		Log.d("Time", "Act bindService : "+
+				(System.currentTimeMillis() - start));
 	}
 	@Override
 	protected void onPause() {
