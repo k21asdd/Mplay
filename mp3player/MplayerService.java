@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.media.MediaMetadataRetriever;
@@ -122,17 +123,22 @@ Runnable{
 		// TODO Auto-generated method stub
 		super.onCreate();
 		
+		
 		mMessenger = new Messenger(mHandler);
 		mp = new MediaPlayer();
 		mp.setLooping(true);
 		mp.setOnCompletionListener(this);
 		mp.setOnPreparedListener(this);
+		long start = System.currentTimeMillis();
 		ML = new MusicList();
+		Log.d("Time", "Ser new MusicList : "+
+				(System.currentTimeMillis() - start));
 		if(ML.isEmpty()){
 			Log.d("Songs","ML is empty");
 			init = false;
 		}else{
 			init = true;
+			start = System.currentTimeMillis();
 			SharedPreferences sp = getSharedPreferences(preference, MODE_PRIVATE);
 			String lSong = sp.getString(LAST_SONG, null);
 			if( lSong != null){
@@ -144,6 +150,8 @@ Runnable{
 				setSong(ML.NextSong(mp.isLooping()));
 				prepareSong();
 			}
+			Log.d("Time", "Ser SharedPreferences : "+
+					(System.currentTimeMillis() - start));
 		}
 		
 		Log.i("Service_bian", "«Ø¥ß");
