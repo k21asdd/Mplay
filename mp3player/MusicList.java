@@ -17,7 +17,7 @@ public class MusicList{
 			"Ringtones","Alarms","Notifications",
 			"Pictures","Movies","DCIM","Android",
 			".data","My Documents","Albums","yahoo",
-			"data"};
+			"data","game","games","baidu","mico","beetalk"};
 	public MusicList(){
 		MuArrList = new ArrayList<String>();
 		MusicPath = new ArrayList<String>();
