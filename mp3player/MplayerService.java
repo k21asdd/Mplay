@@ -198,6 +198,13 @@ Runnable{
 	public int onStartCommand(Intent intent, int flags, int startId) {
 	 // TODO Auto-generated method stub
 		Log.i("Service_bian", "°õ¦æ");
+		String s = intent.getStringExtra("ACTION");
+		if(s!=null && !s.isEmpty()){
+			Log.i("Noti_bian", s);
+			if(s.equals("PAUSE")){
+				mp.pause();
+			}
+		}
 		return super.onStartCommand(intent, flags, startId);
 	}
 	
