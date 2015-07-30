@@ -26,6 +26,7 @@
             </intent-filter>
         </activity>
         <service android:name="com.example.mp3player.MplayerService"></service>
+        <receiver android:name="com.example.mp3player.CancelNotificationReceiver" />
     </application>
 
 </manifest>
