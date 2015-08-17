@@ -47,6 +47,7 @@ Runnable{
 	public static final int BUF_UPDATE = 6;
 	public static final int ACT_OPEN = 7;
 	public static final int ACT_CLOSE = 8;
+	public static final int MP_EXIT = 9;
 	
 	//Preference
 	private final String preference = "BianMP3";
@@ -87,12 +88,16 @@ Runnable{
 				break;
 			case MP_PLAY:
 				Log.i("Handler_bian", "SER : Get MP_PLAY");
+				if(service.cMessenger != null && service.cMessenger != msg.replyTo)
+					service.sendMsg(MP_PLAY, service.cMessenger);
 				service.play();
 				service.seekThread = new Thread(service);
 				service.seekThread.start();
 				break;
 			case MP_PAUSE:
 				Log.i("Handler_bian", "SER : Get MP_PAUSE");
+				if(service.cMessenger != null && service.cMessenger != msg.replyTo)
+					service.sendMsg(MP_PAUSE, service.cMessenger);
 				service.pause();
 				//User press pause button
 				service.closeSeekThread();
@@ -109,6 +114,10 @@ Runnable{
 				Log.i("Handler_bian", "SER : Get SK_CHANGE");
 				//change by user
 				service.seekTo(msg.getData().getInt("Duration"));
+				break;
+			case MP_EXIT:
+				Log.i("Handler_bian", "SER : Get MP_EXIT");
+				//change by user
 				break;
 			default: 
 				super.handleMessage(msg);
@@ -160,7 +169,6 @@ Runnable{
 	@Override
 	public IBinder onBind(Intent intent) {
 		// TODO Auto-generated method stub
-		IsActivityAlive = true;
 		if(seekThread == null)
 			seekThread = new Thread(this);
 		if(mp.isPlaying())
@@ -170,7 +178,6 @@ Runnable{
 	}
 	@Override
 	public boolean onUnbind(Intent intent) {
-		IsActivityAlive = false;
 		closeSeekThread();
 		Log.i("Service_bian", "onUnbind");
 		return super.onUnbind(intent);
@@ -198,12 +205,9 @@ Runnable{
 	public int onStartCommand(Intent intent, int flags, int startId) {
 	 // TODO Auto-generated method stub
 		Log.i("Service_bian", "°õ¦æ");
-		String s = intent.getStringExtra("ACTION");
-		if(s!=null && !s.isEmpty()){
-			Log.i("Noti_bian", s);
-			if(s.equals("PAUSE")){
-				mp.pause();
-			}
+		int what = intent.getIntExtra("MSG",-1);
+		if(what != -1){
+			sendMsg(what, mMessenger);
 		}
 		return super.onStartCommand(intent, flags, startId);
 	}
@@ -314,16 +318,18 @@ Runnable{
 
 //	----Seekbar thread----
 	private void closeSeekThread(){
+		IsActivityAlive = false;
 		if(seekThread != null && seekThread.isAlive()){
 			seekThread.interrupt();
-			seekThread = null;
 		}
+		seekThread = null;
 	}
 	
 	@Override
 	public void run() {
 		// TODO Auto-generated method stub
-		while(!Thread.currentThread().interrupted()){
+		IsActivityAlive = true;
+		while(IsActivityAlive){
 			if(mp.getCurrentPosition() < 0) continue;
 			Bundle data = new Bundle();
 			data.putInt("Duration", mp.getCurrentPosition());
@@ -333,6 +339,7 @@ Runnable{
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
 				Log.i("Thread_bian", "SeekBar thread interrupt");
+				break;
 			}
 		}
 	}
@@ -340,7 +347,7 @@ Runnable{
 	
 	private void sendMsg(int what, Messenger mm){
 		if(mm == null){
-			Log.d("Service_bian", "Service : cMessenger is null");
+			Log.d("Service_bian", "Service : cMessenger is null with " + String.valueOf(what));
 			return;
 		}
 		Message msg = new Message();
@@ -354,7 +361,7 @@ Runnable{
 	}
 	private void sendMsg(int what, Bundle data,  Messenger mm){
 		if(mm == null){
-			Log.d("Service_bian", "Service : cMessenger is null");
+			Log.d("Service_bian", "Service : cMessenger is null with " + String.valueOf(what));
 			return;
 		}
 		Message msg = new Message();
