@@ -57,6 +57,12 @@ public class MainActivity extends Activity{
 			MainActivity act = mAct.get();
 			if(act == null)return;
 			switch(msg.what){
+			case MplayerService.MP_PLAY:
+				act.action.setText("¼½©ñ");
+				break;
+			case MplayerService.MP_PAUSE:
+				act.action.setText("¼È°±");
+				break;
 			case MplayerService.MP_CHANGE_SONG:
 				Log.i("Handler_bian", "ACT : Get MP_CHANGE_SONG");
 				Bundle data = msg.getData();
@@ -197,7 +203,7 @@ public class MainActivity extends Activity{
     			progress = progressValue;
     		}
 		});
-    	cuztomNotiView();
+    	new MpNitView(this, getApplicationContext());
     }
 	private void cuztomNotiView(){
 		final NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(this);
@@ -232,7 +238,7 @@ public class MainActivity extends Activity{
     	        );
     	// cancel test
     	Intent pause = new Intent(this, MplayerService.class);
-    	pause.putExtra("ACTION", "PAUSE");
+    	pause.putExtra("MSG", MplayerService.MP_PAUSE);
     	PendingIntent pausePendingInent = 
     			PendingIntent.getService(getApplicationContext(), 0, pause, PendingIntent.FLAG_UPDATE_CURRENT);
     	
